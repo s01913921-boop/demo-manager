@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>デモ機管理アプリ</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F8F7F4; --surface: #FFFFFF; --surface2: #F1EFE8;
+  --text: #1a1a1a; --text2: #5F5E5A; --text3: #888780;
+  --border: rgba(0,0,0,0.12); --accent: #185FA5; --accent-bg: #E6F1FB;
+  --radius: 12px; --radius-sm: 8px;
+}
+body { font-family: -apple-system,'Hiragino Sans','Yu Gothic UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+.app { display:flex; flex-direction:column; height:100vh; max-width:430px; margin:0 auto; background:var(--surface); }
+
+/* Header */
+.header { background:#0C447C; color:white; padding:48px 20px 14px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.header-title { font-size:17px; font-weight:700; }
+.header-sub { font-size:11px; opacity:0.7; margin-top:2px; }
+
+/* Tabs */
+.tabs { display:flex; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; }
+.tab { flex:1; padding:12px 4px 10px; text-align:center; font-size:10px; color:var(--text3); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.2s; -webkit-tap-highlight-color:transparent; }
+.tab.active { color:#185FA5; border-bottom-color:#185FA5; font-weight:700; }
+.tab-icon { font-size:18px; display:block; margin-bottom:3px; }
+
+/* Content */
+.content { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.page { display:none; padding:16px; }
+.page.active { display:block; }
+
+/* Scan */
+.qr-section { background:#0C447C; border-radius:var(--radius); overflow:hidden; margin-bottom:16px; }
+#qr-video { width:100%; display:none; }
+.scan-area { padding:24px; text-align:center; color:white; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.scan-frame { width:160px; height:160px; border:3px solid rgba(255,255,255,0.9); border-radius:16px; margin:0 auto 14px; position:relative; display:flex; align-items:center; justify-content:center; }
+.scan-frame::before,.scan-frame::after { content:''; position:absolute; width:22px; height:22px; border-color:#EF9F27; border-style:solid; }
+.scan-frame::before { top:-3px; left:-3px; border-width:4px 0 0 4px; border-radius:4px 0 0 4px; }
+.scan-frame::after  { bottom:-3px; right:-3px; border-width:0 4px 4px 0; border-radius:0 0 4px 0; }
+.scan-line { position:absolute; width:80%; height:2px; background:linear-gradient(90deg,transparent,#EF9F27,transparent); animation:scanAnim 2s ease-in-out infinite; left:10%; }
+@keyframes scanAnim { 0%,100%{top:20%;opacity:0} 10%{opacity:1} 50%{top:80%;opacity:1} 90%{opacity:1} }
+.scan-qr-icon { font-size:56px; opacity:0.35; }
+.scan-text { font-size:13px; opacity:0.85; line-height:1.6; }
+.qr-controls { display:flex; gap:8px; padding:10px; }
+.qr-btn { flex:1; padding:10px; border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; -webkit-tap-highlight-color:transparent; }
+.qr-btn-start { background:#EF9F27; color:#412402; }
+.qr-btn-stop  { background:rgba(255,255,255,0.15); color:white; }
+
+.selected-banner { display:none; background:#E6F1FB; border:1.5px solid #185FA5; border-radius:var(--radius); padding:14px; margin-bottom:16px; }
+.section-label { font-size:13px; font-weight:700; color:var(--text2); margin-bottom:10px; }
+
+/* Device grid */
+.device-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.device-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:10px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent; }
+.device-card:active { transform:scale(0.96); }
+.device-card.selected { border-color:#185FA5; background:#E6F1FB; }
+.device-card-img { width:48px; height:48px; border-radius:8px; object-fit:cover; margin-bottom:5px; }
+.device-card-icon { font-size:28px; margin-bottom:4px; display:block; }
+.device-card-name { font-size:11px; font-weight:700; line-height:1.3; margin-bottom:2px; }
+.device-card-model { font-size:9px; color:var(--text3); }
+.st-badge { display:inline-block; font-size:9px; font-weight:700; padding:2px 6px; border-radius:20px; margin-top:4px; }
+.st-available { background:#EAF3DE; color:#27500A; }
+.st-out       { background:#FCEBEB; color:#791F1F; }
+.st-reserved  { background:#FAEEDA; color:#633806; }
+
+/* Action form */
+.action-form { display:none; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+.form-title { font-size:14px; font-weight:700; margin-bottom:14px; }
+.form-label { font-size:12px; font-weight:700; color:var(--text2); margin-bottom:8px; }
+.staff-row { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+.staff-btn { flex:1; min-width:56px; display:flex; flex-direction:column; align-items:center; padding:8px 4px; border:1.5px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; background:white; transition:all 0.15s; -webkit-tap-highlight-color:transparent; }
+.staff-btn:active { transform:scale(0.95); }
+.staff-btn.selected { border-color:#185FA5; background:#E6F1FB; }
+.staff-photo { width:44px; height:44px; border-radius:50%; object-fit:cover; margin-bottom:4px; }
+.staff-avatar-emoji { width:44px; height:44px; border-radius:50%; font-size:22px; display:flex; align-items:center; justify-content:center; margin-bottom:4px; }
+.staff-name-label { font-size:10px; font-weight:700; color:var(--text2); }
+.status-row { display:flex; gap:8px; margin-bottom:14px; }
+.status-btn { flex:1; padding:10px 4px; border:1.5px solid var(--border); border-radius:var(--radius-sm); text-align:center; cursor:pointer; background:white; font-size:11px; font-weight:700; transition:all 0.15s; -webkit-tap-highlight-color:transparent; }
+.status-btn:active { transform:scale(0.97); }
+.sel-out     { border-color:#E24B4A!important; background:#FCEBEB!important; color:#791F1F!important; }
+.sel-back    { border-color:#639922!important; background:#EAF3DE!important; color:#27500A!important; }
+.sel-reserve { border-color:#EF9F27!important; background:#FAEEDA!important; color:#633806!important; }
+#destWrap { display:none; }
+.dest-input { width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:14px; font-family:inherit; color:var(--text); background:white; margin-bottom:14px; }
+.dest-input:focus { outline:none; border-color:#185FA5; }
+.submit-btn { width:100%; padding:14px; background:#0C447C; color:white; border:none; border-radius:var(--radius-sm); font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; }
+.submit-btn:active { background:#185FA5; }
+.submit-btn:disabled { background:var(--text3); cursor:not-allowed; }
+
+/* Inventory */
+.inv-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+.inv-stat { background:var(--surface2); border-radius:var(--radius-sm); padding:10px 8px; text-align:center; }
+.inv-stat-num { font-size:22px; font-weight:700; }
+.inv-stat-label { font-size:10px; color:var(--text2); margin-top:2px; }
+.filter-row { display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px; }
+.filter-row::-webkit-scrollbar { display:none; }
+.filter-chip { padding:5px 12px; border-radius:20px; border:1px solid var(--border); font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; background:white; color:var(--text2); -webkit-tap-highlight-color:transparent; }
+.filter-chip.active { background:#0C447C; color:white; border-color:#0C447C; }
+.inv-list { display:flex; flex-direction:column; gap:10px; }
+.inv-item { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; display:flex; align-items:stretch; }
+.inv-img-wrap { width:72px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:var(--surface2); }
+.inv-img-wrap img { width:72px; height:72px; object-fit:cover; }
+.inv-img-wrap span { font-size:32px; }
+.inv-body { flex:1; padding:10px 12px; min-width:0; }
+.inv-name  { font-size:13px; font-weight:700; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.inv-model { font-size:11px; color:var(--text3); margin-bottom:6px; }
+.inv-status-row { display:flex; align-items:center; justify-content:space-between; }
+.inv-badge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; }
+.inv-who   { font-size:10px; color:var(--text3); }
+.inv-dest  { font-size:10px; color:var(--text3); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* History */
+.hist-list { display:flex; flex-direction:column; gap:10px; }
+.hist-item { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; }
+.hist-top  { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.hist-device { font-size:13px; font-weight:700; }
+.hist-time   { font-size:10px; color:var(--text3); }
+.hist-row    { display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text2); flex-wrap:wrap; }
+
+/* ===== SETTINGS ===== */
+.settings-section { margin-bottom:24px; }
+.settings-section-title { font-size:13px; font-weight:700; color:var(--text3); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+.settings-list { display:flex; flex-direction:column; gap:8px; }
+
+/* Staff settings card */
+.staff-setting-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; display:flex; align-items:center; gap:12px; }
+.staff-setting-photo { width:52px; height:52px; border-radius:50%; object-fit:cover; flex-shrink:0; cursor:pointer; border:2px solid var(--border); }
+.staff-setting-emoji { width:52px; height:52px; border-radius:50%; font-size:26px; display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; border:2px dashed var(--border); }
+.staff-setting-info { flex:1; min-width:0; }
+.staff-setting-name-input { width:100%; padding:7px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:14px; font-family:inherit; color:var(--text); background:white; margin-bottom:4px; }
+.staff-setting-name-input:focus { outline:none; border-color:#185FA5; }
+.staff-setting-hint { font-size:10px; color:var(--text3); }
+.staff-setting-actions { display:flex; flex-direction:column; gap:4px; }
+.icon-btn { padding:6px 10px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:11px; font-weight:700; cursor:pointer; background:white; font-family:inherit; white-space:nowrap; -webkit-tap-highlight-color:transparent; }
+.icon-btn.danger { color:#A32D2D; border-color:#F09595; }
+
+/* Device settings card */
+.device-setting-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; }
+.device-setting-top { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.device-setting-img { width:52px; height:52px; border-radius:8px; object-fit:cover; flex-shrink:0; cursor:pointer; border:2px solid var(--border); }
+.device-setting-emoji { width:52px; height:52px; border-radius:8px; font-size:28px; display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; border:2px dashed var(--border); background:var(--surface2); }
+.device-setting-fields { flex:1; display:flex; flex-direction:column; gap:5px; }
+.setting-input { width:100%; padding:7px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-family:inherit; color:var(--text); background:white; }
+.setting-input:focus { outline:none; border-color:#185FA5; }
+.device-setting-actions { display:flex; gap:6px; }
+.save-btn { flex:1; padding:8px; background:#0C447C; color:white; border:none; border-radius:var(--radius-sm); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; }
+.del-btn  { padding:8px 12px; background:white; color:#A32D2D; border:1px solid #F09595; border-radius:var(--radius-sm); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; }
+.add-btn  { width:100%; padding:12px; border:2px dashed var(--border); border-radius:var(--radius); background:var(--surface2); font-size:13px; font-weight:700; color:var(--text3); cursor:pointer; font-family:inherit; margin-top:4px; -webkit-tap-highlight-color:transparent; }
+.add-btn:active { background:var(--accent-bg); color:var(--accent); }
+
+/* Toast */
+.toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px); background:#0C447C; color:white; padding:12px 20px; border-radius:20px; font-size:13px; font-weight:700; opacity:0; transition:all 0.3s; white-space:nowrap; z-index:999; pointer-events:none; box-shadow:0 4px 16px rgba(0,0,0,0.25); }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Modal */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:100; display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.3s; }
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal { background:var(--surface); border-radius:24px 24px 0 0; padding:20px; width:100%; max-width:430px; transform:translateY(100%); transition:transform 0.3s; max-height:80vh; overflow-y:auto; }
+.modal-overlay.open .modal { transform:translateY(0); }
+.modal-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 16px; }
+.modal-title { font-size:16px; font-weight:700; margin-bottom:14px; text-align:center; }
+.modal-device-list { display:flex; flex-direction:column; gap:8px; }
+.modal-device { display:flex; align-items:center; gap:12px; padding:12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent; }
+.modal-device:active { background:var(--accent-bg); border-color:var(--accent); }
+.modal-device-img { width:40px; height:40px; border-radius:6px; object-fit:cover; flex-shrink:0; }
+.modal-device-icon { font-size:28px; flex-shrink:0; width:40px; text-align:center; }
+.modal-device-info { flex:1; }
+.modal-device-name  { font-size:13px; font-weight:700; }
+.modal-device-model { font-size:11px; color:var(--text3); }
+.modal-cancel { margin-top:12px; width:100%; padding:14px; background:var(--surface2); border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; color:var(--text2); }
+
+input[type=file] { display:none; }
+
+/* Overdue warning */
+.overdue-banner { background:#FCEBEB; border:1.5px solid #E24B4A; border-radius:var(--radius); padding:14px 16px; margin-bottom:14px; display:none; }
+.overdue-banner-title { font-size:13px; font-weight:700; color:#791F1F; margin-bottom:6px; }
+.overdue-banner-list  { display:flex; flex-direction:column; gap:5px; }
+.overdue-banner-item  { font-size:12px; color:#A32D2D; display:flex; align-items:center; gap:6px; }
+.overdue-days { display:inline-block; background:#E24B4A; color:white; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; }
+.inv-overdue-badge { font-size:10px; font-weight:700; color:#791F1F; background:#FCEBEB; border:1px solid #F09595; border-radius:20px; padding:2px 7px; margin-top:3px; display:inline-block; }
+.qr-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:200; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.3s; padding:20px; }
+.qr-modal-overlay.open { opacity:1; pointer-events:all; }
+.qr-modal { background:white; border-radius:20px; padding:24px 20px; width:100%; max-width:360px; text-align:center; transform:scale(0.9); transition:transform 0.3s; }
+.qr-modal-overlay.open .qr-modal { transform:scale(1); }
+.qr-modal-title { font-size:15px; font-weight:700; margin-bottom:4px; }
+.qr-modal-sub   { font-size:12px; color:#888780; margin-bottom:16px; }
+#qrCanvas { border:1px solid #eee; border-radius:8px; margin-bottom:16px; }
+.qr-print-btn { display:inline-block; padding:12px 28px; background:#0C447C; color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; margin-right:8px; }
+.qr-close-btn { display:inline-block; padding:12px 20px; background:#F1EFE8; color:#5F5E5A; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+.qr-all-grid  { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.qr-all-item  { background:white; border:1px solid #eee; border-radius:10px; padding:12px 8px; text-align:center; page-break-inside:avoid; }
+.qr-all-name  { font-size:11px; font-weight:700; margin-top:6px; line-height:1.3; }
+.qr-all-model { font-size:9px;  color:#888780; margin-top:2px; }
+.qr-all-id    { font-size:9px;  color:#185FA5; margin-top:1px; }
+@media print {
+  body * { visibility:hidden !important; }
+  #printArea, #printArea * { visibility:visible !important; }
+  #printArea { position:fixed; top:0; left:0; width:100%; padding:10px; }
+  .qr-all-grid { grid-template-columns:repeat(3,1fr); }
+  .qr-all-item { border:0.5px solid #ccc; }
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div>
+      <div class="header-title">📦 デモ機管理</div>
+      <div class="header-sub" id="headerSub">読み込み中...</div>
+    </div>
+    <img src="data:image/png;base64,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" style="width:36px;height:36px;object-fit:contain;">
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('scan')"><span class="tab-icon">📷</span>スキャン</div>
+    <div class="tab" onclick="switchTab('inventory')"><span class="tab-icon">📋</span>在庫一覧</div>
+    <div class="tab" onclick="switchTab('history')"><span class="tab-icon">🕐</span>履歴</div>
+    <div class="tab" onclick="switchTab('settings')"><span class="tab-icon">⚙️</span>設定</div>
+  </div>
+  <div class="content">
+
+    <!-- SCAN -->
+    <div class="page active" id="page-scan">
+      <div class="qr-section">
+        <video id="qr-video" autoplay playsinline muted></video>
+        <div class="scan-area" id="scanTap" onclick="openDeviceModal()">
+          <div class="scan-frame"><div class="scan-qr-icon">⬛</div><div class="scan-line"></div></div>
+          <div class="scan-text">タップしてデモ機を選択<br><span style="opacity:0.6;font-size:11px">QRスキャンまたは手動選択</span></div>
+        </div>
+        <div class="qr-controls">
+          <button class="qr-btn qr-btn-start" onclick="startQRScan()">📷 QRカメラ起動</button>
+          <button class="qr-btn qr-btn-stop" id="stopBtn" style="display:none" onclick="stopQRScan()">⏹ 停止</button>
+        </div>
+      </div>
+      <!-- Overdue warning banner -->
+      <div class="overdue-banner" id="overdueBanner">
+        <div class="overdue-banner-title">⚠️ 返却期限超過のデモ機があります</div>
+        <div class="overdue-banner-list" id="overdueList"></div>
+      </div>
+
+      <div class="selected-banner" id="selectedBanner">
+        <div style="font-size:11px;color:#0C447C;font-weight:700;margin-bottom:5px;">📦 選択中のデモ機</div>
+        <div style="font-size:16px;font-weight:700;" id="selDevName">-</div>
+        <div style="font-size:12px;color:#185FA5;" id="selDevModel">-</div>
+      </div>
+      <div class="section-label">🔍 クイック選択</div>
+      <div class="device-grid" id="deviceGrid"></div>
+      <div class="action-form" id="actionForm">
+        <div class="form-title">📝 操作を記録</div>
+        <div class="form-label">👤 担当スタッフ</div>
+        <div class="staff-row" id="staffRow"></div>
+        <div class="form-label">📌 ステータス変更</div>
+        <div class="status-row">
+          <div class="status-btn" id="btn-out"     onclick="selectStatus('out')">🚗 持出</div>
+          <div class="status-btn" id="btn-back"    onclick="selectStatus('back')">🏠 持ち帰り</div>
+          <div class="status-btn" id="btn-reserve" onclick="selectStatus('reserve')">📅 予約</div>
+        </div>
+        <div id="destWrap">
+          <div class="form-label">🏢 持出先 / 備考</div>
+          <input class="dest-input" type="text" id="destInput" placeholder="例：株式会社〇〇 山田様">
+        </div>
+        <button class="submit-btn" id="submitBtn" onclick="submitAction()" disabled>記録する</button>
+      </div>
+    </div>
+
+    <!-- INVENTORY -->
+    <div class="page" id="page-inventory">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="font-size:16px;font-weight:700;">在庫状況</div>
+        <div style="font-size:11px;color:var(--text3);" id="invTime">-</div>
+      </div>
+      <div class="inv-summary">
+        <div class="inv-stat"><div class="inv-stat-num" style="color:#27500A" id="statAvail">-</div><div class="inv-stat-label">✅ 在庫あり</div></div>
+        <div class="inv-stat"><div class="inv-stat-num" style="color:#791F1F" id="statOut">-</div><div class="inv-stat-label">🚗 持出中</div></div>
+        <div class="inv-stat"><div class="inv-stat-num" style="color:#633806" id="statRes">-</div><div class="inv-stat-label">📅 予約済</div></div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-chip active" onclick="setFilter('all',this)">すべて</div>
+        <div class="filter-chip" onclick="setFilter('available',this)">在庫あり</div>
+        <div class="filter-chip" onclick="setFilter('out',this)">持出中</div>
+        <div class="filter-chip" onclick="setFilter('reserved',this)">予約済</div>
+      </div>
+      <div class="inv-list" id="invList"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="page" id="page-history">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="font-size:16px;font-weight:700;">操作履歴</div>
+        <button onclick="clearHistory()" style="font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;font-family:inherit;">🗑 クリア</button>
+      </div>
+      <div class="hist-list" id="histList"><div style="text-align:center;color:var(--text3);padding:40px 0;font-size:14px;">まだ履歴がありません</div></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+
+      <!-- Staff settings -->
+      <div class="settings-section">
+        <div class="settings-section-title">👤 スタッフ管理</div>
+        <div class="settings-list" id="staffSettingsList"></div>
+        <button class="add-btn" onclick="addStaff()">＋ スタッフを追加</button>
+      </div>
+
+      <!-- Device settings -->
+      <div class="settings-section">
+        <div class="settings-section-title">📦 デモ機管理</div>
+        <div class="settings-list" id="deviceSettingsList"></div>
+        <button class="add-btn" onclick="addDevice()">＋ デモ機を追加</button>
+        <button class="add-btn" onclick="printAllQR()" style="border-color:#185FA5;color:#0C447C;background:#E6F1FB;">🖨️ QRコードを一括印刷（全台）</button>
+      </div>
+
+      <!-- Reset -->
+      <div class="settings-section">
+        <div class="settings-section-title">🔧 データ管理</div>
+        <button onclick="resetAll()" style="width:100%;padding:12px;background:white;color:#A32D2D;border:1px solid #F09595;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">⚠️ すべてのデータをリセット</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Device modal -->
+<div class="modal-overlay" id="deviceModal" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📦 デモ機を選択</div>
+    <div class="modal-device-list" id="modalDeviceList"></div>
+    <button class="modal-cancel" onclick="closeDeviceModal()">キャンセル</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="fileStaffPhoto"  accept="image/*">
+<input type="file" id="fileDevicePhoto" accept="image/*">
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+
+<!-- QR Single Modal -->
+<div class="qr-modal-overlay" id="qrModal">
+  <div class="qr-modal">
+    <div class="qr-modal-title" id="qrModalTitle">QRコード</div>
+    <div class="qr-modal-sub"   id="qrModalSub">-</div>
+    <div id="qrCanvasWrap" style="display:inline-block;border:1px solid #eee;border-radius:8px;overflow:hidden;"></div>
+    <br>
+    <button class="qr-print-btn" onclick="saveQRImage()">📥 画像を保存</button>
+    <button class="qr-close-btn" onclick="closeQRModal()">閉じる</button>
+  </div>
+</div>
+
+<!-- QR All Print Area (hidden, print only) -->
+<div id="printArea" style="display:none;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ===== SUPABASE設定 ここを書き換えてください ===== */
+const SUPABASE_URL = 'https://lpmiiepkurfkdzywucfa.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_k_A7Byir6G4h4ixBjAUc3g_SVibApIp';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+</script>
+<script>
+/* ===== DEFAULT DATA ===== */
+const DEFAULT_STAFF = [
+  {id:1,name:'田中',emoji:'👨‍💼',photo:'',color:'#B5D4F4'},
+  {id:2,name:'佐藤',emoji:'👩‍💼',photo:'',color:'#9FE1CB'},
+  {id:3,name:'鈴木',emoji:'🧑‍💼',photo:'',color:'#F5C4B3'},
+  {id:4,name:'山田',emoji:'👨‍🔬',photo:'',color:'#FAC775'},
+  {id:5,name:'高橋',emoji:'👩‍🔬',photo:'',color:'#F4C0D1'},
+];
+const DEFAULT_DEVICES = [
+  {id:'D01',name:'MacBook Pro 14"',model:'MKGP3J/A',icon:'💻',photo:'',status:'available',who:'',dest:''},
+  {id:'D02',name:'MacBook Air M3', model:'MRXN3J/A',icon:'💻',photo:'',status:'out',who:'田中',dest:'株式会社ABC 鈴木部長'},
+  {id:'D03',name:'iPad Pro 11"',   model:'MNXD3J/A',icon:'📱',photo:'',status:'available',who:'',dest:''},
+  {id:'D04',name:'iPad Air 5th',   model:'MM9L3J/A',icon:'📱',photo:'',status:'reserved',who:'佐藤',dest:'山田商事 来週火曜'},
+  {id:'D05',name:'iPhone 15 Pro',  model:'MTUN3J/A',icon:'📱',photo:'',status:'out',who:'鈴木',dest:'テスト株式会社'},
+  {id:'D06',name:'iPhone 15',      model:'MTP63J/A',icon:'📱',photo:'',status:'available',who:'',dest:''},
+  {id:'D07',name:'Apple Watch S9', model:'MRHN3J/A',icon:'⌚',photo:'',status:'available',who:'',dest:''},
+  {id:'D08',name:'Apple TV 4K',    model:'MN873J/A',icon:'📺',photo:'',status:'out',who:'山田',dest:'ホテル東京 展示用'},
+  {id:'D09',name:'AirPods Pro 2',  model:'MTJV3J/A',icon:'🎧',photo:'',status:'available',who:'',dest:''},
+  {id:'D10',name:'HomePod mini',   model:'MJ2D3J/A',icon:'🔊',photo:'',status:'reserved',who:'高橋',dest:'〇〇社デモ 来月'},
+  {id:'D11',name:'Mac Studio M2',  model:'MQFX3J/A',icon:'🖥️',photo:'',status:'available',who:'',dest:''},
+  {id:'D12',name:'Mac mini M4',    model:'MGNR3J/A',icon:'🖥️',photo:'',status:'available',who:'',dest:''},
+  {id:'D13',name:'Studio Display', model:'MMYW3J/A',icon:'🖥️',photo:'',status:'out',who:'田中',dest:'展示会場搬入'},
+  {id:'D14',name:'Magic Keyboard', model:'MK2C3J/A',icon:'⌨️',photo:'',status:'available',who:'',dest:''},
+  {id:'D15',name:'Beats Studio Pro',model:'MQTP3J/A',icon:'🎧',photo:'',status:'available',who:'',dest:''},
+  {id:'D16',name:'iPad mini 6th',  model:'MK7P3J/A',icon:'📱',photo:'',status:'out',who:'佐藤',dest:'学校法人〇〇 体験会'},
+  {id:'D17',name:'AirTag (4個set)',model:'MX542ZP/A',icon:'🏷️',photo:'',status:'available',who:'',dest:''},
+  {id:'D18',name:'MagSafe充電セット',model:'MHXH3ZA/A',icon:'🔌',photo:'',status:'available',who:'',dest:''},
+  {id:'D19',name:'MacBook Pro 16"',model:'MRW43J/A',icon:'💻',photo:'',status:'reserved',who:'鈴木',dest:'大手商社 プレゼン'},
+  {id:'D20',name:'Vision Pro',     model:'MQL93J/A',icon:'🥽',photo:'',status:'available',who:'',dest:''},
+];
+
+let staff   = JSON.parse(JSON.stringify(DEFAULT_STAFF));
+let devices = JSON.parse(JSON.stringify(DEFAULT_DEVICES));
+let history = [];
+
+let selectedDeviceId=null, selectedStaffId=null, selectedStatus=null, currentFilter='all';
+let qrStream=null, qrCanvas=null, qrCtx=null, qrAnimId=null;
+let pendingPhotoTarget=null, pendingPhotoId=null;
+
+/* ===== SUPABASE FUNCTIONS ===== */
+async function loadFromSupabase() {
+  try {
+    showToast('⏳ データを読み込み中...');
+
+    // デモ機読み込み
+    const { data: devData } = await sb.from('devices').select('*');
+    if (devData && devData.length > 0) {
+      devices = devData.map(d => ({
+        id: d.id, name: d.name, model: d.model,
+        icon: d.icon||'💻', photo: d.photo||'',
+        status: d.status||'available', who: d.who||'', dest: d.dest||'',
+        outDate: d.out_date||null
+      }));
+    } else {
+      // 初回：デフォルトデータをSupabaseに保存
+      await saveDevicesToSupabase();
+    }
+
+    // スタッフ読み込み
+    const { data: stData } = await sb.from('staff').select('*').order('sort_order');
+    if (stData && stData.length > 0) {
+      staff = stData.map(s => ({
+        id: s.id, name: s.name, emoji: s.emoji||'👤',
+        photo: s.photo||'', color: s.color||'#B5D4F4'
+      }));
+    } else {
+      await saveStaffToSupabase();
+    }
+
+    // 履歴読み込み
+    const { data: histData } = await sb.from('history').select('*').order('created_at', {ascending:false}).limit(100);
+    if (histData) {
+      history = histData.map(h => ({
+        time: new Date(h.created_at).toLocaleString('ja-JP'),
+        deviceId: h.device_id, deviceName: h.device_name,
+        staffName: h.staff_name, avatar: h.avatar||'👤',
+        status: h.status, dest: h.dest||''
+      }));
+    }
+
+    renderDeviceGrid();
+    updateHeader();
+    checkOverdue();
+    showToast('✅ データを読み込みました');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ オフラインモードで起動');
+    renderDeviceGrid();
+    updateHeader();
+  }
+}
+
+async function saveDevicesToSupabase() {
+  const rows = devices.map(d => ({
+    id: d.id, name: d.name, model: d.model,
+    icon: d.icon||'💻', photo: d.photo||'',
+    status: d.status, who: d.who||'', dest: d.dest||'',
+    out_date: d.outDate||null, updated_at: new Date().toISOString()
+  }));
+  await sb.from('devices').upsert(rows);
+}
+
+async function saveStaffToSupabase() {
+  const rows = staff.map((s,i) => ({
+    id: s.id, name: s.name, emoji: s.emoji||'👤',
+    photo: s.photo||'', color: s.color||'#B5D4F4', sort_order: i
+  }));
+  await sb.from('staff').upsert(rows);
+}
+
+async function saveDeviceToSupabase(dev) {
+  await sb.from('devices').upsert({
+    id: dev.id, name: dev.name, model: dev.model,
+    icon: dev.icon||'💻', photo: dev.photo||'',
+    status: dev.status, who: dev.who||'', dest: dev.dest||'',
+    out_date: dev.outDate||null, updated_at: new Date().toISOString()
+  });
+}
+
+async function addHistoryToSupabase(h) {
+  await sb.from('history').insert({
+    device_id: h.deviceId, device_name: h.deviceName,
+    staff_name: h.staffName, avatar: h.avatar||'',
+    status: h.status, dest: h.dest||''
+  });
+}
+
+// リアルタイム更新の購読
+function subscribeRealtime() {
+  sb.channel('devices-changes')
+    .on('postgres_changes', {event:'*', schema:'public', table:'devices'}, payload => {
+      const d = payload.new;
+      if (!d) return;
+      const idx = devices.findIndex(x => x.id === d.id);
+      const dev = {
+        id:d.id, name:d.name, model:d.model,
+        icon:d.icon||'💻', photo:d.photo||'',
+        status:d.status, who:d.who||'', dest:d.dest||'',
+        outDate:d.out_date||null
+      };
+      if (idx >= 0) devices[idx] = dev; else devices.push(dev);
+      renderDeviceGrid();
+      updateHeader();
+      checkOverdue();
+      if (document.getElementById('page-inventory').classList.contains('active')) renderInventory();
+    })
+    .subscribe();
+
+  sb.channel('history-changes')
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'history'}, payload => {
+      const h = payload.new;
+      history.unshift({
+        time: new Date(h.created_at).toLocaleString('ja-JP'),
+        deviceId: h.device_id, deviceName: h.device_name,
+        staffName: h.staff_name, avatar: h.avatar||'👤',
+        status: h.status, dest: h.dest||''
+      });
+      if (document.getElementById('page-history').classList.contains('active')) renderHistory();
+    })
+    .subscribe();
+}
+
+/* ===== SAVE（ローカル＋Supabase） ===== */
+function save() {
+  // ローカルにも保存（オフライン対策）
+  try { localStorage.setItem('demoStaff', JSON.stringify(staff)); } catch(e){}
+  try { localStorage.setItem('demoDevices', JSON.stringify(devices)); } catch(e){}
+}
+
+/* ===== TABS ===== */
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['scan','inventory','history','settings'][i]===tab));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  if(tab==='inventory') renderInventory();
+  if(tab==='history')   renderHistory();
+  if(tab==='settings')  renderSettings();
+}
+
+/* ===== HELPERS ===== */
+function stLabel(s){return{available:'✅ 在庫',out:'🚗 持出中',reserved:'📅 予約済'}[s]||s;}
+function stClass(s){return{available:'st-available',out:'st-out',reserved:'st-reserved'}[s]||'';}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function updateHeader(){
+  const av=devices.filter(d=>d.status==='available').length;
+  const out=devices.filter(d=>d.status==='out').length;
+  document.getElementById('headerSub').textContent=`在庫: ${av}台 / 持出: ${out}台 / 全${devices.length}台`;
+}
+function staffImg(s,size=44){
+  return s.photo
+    ? `<img class="staff-photo" src="${s.photo}" style="width:${size}px;height:${size}px;">`
+    : `<div class="staff-avatar-emoji" style="width:${size}px;height:${size}px;background:${s.color}">${s.emoji}</div>`;
+}
+function deviceImg(d,size=48,radius=8){
+  return d.photo
+    ? `<img src="${d.photo}" style="width:${size}px;height:${size}px;border-radius:${radius}px;object-fit:cover;">`
+    : `<span style="font-size:${Math.round(size*0.6)}px;">${d.icon}</span>`;
+}
+
+/* ===== DEVICE GRID ===== */
+function renderDeviceGrid(){
+  const grid=document.getElementById('deviceGrid');
+  grid.innerHTML=devices.slice(0,7).map(d=>`
+    <div class="device-card ${selectedDeviceId===d.id?'selected':''}" onclick="selectDevice('${d.id}')">
+      <div style="margin-bottom:4px;">${deviceImg(d,48,8)}</div>
+      <div class="device-card-name">${d.name}</div>
+      <div class="device-card-model">${d.model}</div>
+      <span class="st-badge ${stClass(d.status)}">${stLabel(d.status)}</span>
+    </div>
+  `).join('')+`<div class="device-card" onclick="openDeviceModal()" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">
+    <span style="font-size:28px;">➕</span><div class="device-card-model">全${devices.length}台</div></div>`;
+}
+
+function selectDevice(id){
+  selectedDeviceId=id;
+  const dev=devices.find(d=>d.id===id);
+  document.getElementById('selDevName').textContent=dev.name;
+  document.getElementById('selDevModel').textContent=dev.model+' · '+dev.id;
+  document.getElementById('selectedBanner').style.display='block';
+  document.getElementById('actionForm').style.display='block';
+  renderDeviceGrid();
+  renderStaffButtons();
+  selectedStatus=null;
+  ['out','back','reserve'].forEach(s=>document.getElementById('btn-'+s).className='status-btn');
+  document.getElementById('destWrap').style.display='none';
+  document.getElementById('destInput').value='';
+  document.getElementById('submitBtn').disabled=true;
+  setTimeout(()=>document.getElementById('actionForm').scrollIntoView({behavior:'smooth',block:'nearest'}),100);
+}
+
+/* ===== STAFF BUTTONS ===== */
+function renderStaffButtons(){
+  document.getElementById('staffRow').innerHTML=staff.map(s=>`
+    <div class="staff-btn ${selectedStaffId===s.id?'selected':''}" onclick="selectStaff(${s.id})">
+      ${staffImg(s,44)}
+      <div class="staff-name-label">${s.name}</div>
+    </div>
+  `).join('');
+}
+function selectStaff(id){selectedStaffId=id;renderStaffButtons();checkSubmit();}
+
+/* ===== STATUS ===== */
+function selectStatus(s){
+  selectedStatus=s;
+  ['out','back','reserve'].forEach(x=>document.getElementById('btn-'+x).className='status-btn'+(x===s?' sel-'+x:''));
+  document.getElementById('destWrap').style.display=(s==='out'||s==='reserve')?'block':'none';
+  checkSubmit();
+}
+function checkSubmit(){document.getElementById('submitBtn').disabled=!(selectedDeviceId&&selectedStaffId&&selectedStatus);}
+
+/* ===== SUBMIT ===== */
+async function submitAction(){
+  if(!selectedDeviceId||!selectedStaffId||!selectedStatus)return;
+  const dev=devices.find(d=>d.id===selectedDeviceId);
+  const s=staff.find(x=>x.id===selectedStaffId);
+  const dest=document.getElementById('destInput').value;
+  dev.status={out:'out',back:'available',reserve:'reserved'}[selectedStatus];
+  dev.who=s.name; dev.dest=dest;
+  if(selectedStatus==='out') dev.outDate=new Date().toISOString();
+  if(selectedStatus==='back'){ dev.outDate=null; }
+
+  const histItem = {deviceId:dev.id,deviceName:dev.name,staffName:s.name,avatar:s.photo?s.photo:s.emoji,status:selectedStatus,dest};
+  history.unshift({time:new Date().toLocaleString('ja-JP'),...histItem});
+
+  // Supabaseに保存
+  document.getElementById('submitBtn').disabled=true;
+  try {
+    await saveDeviceToSupabase(dev);
+    await addHistoryToSupabase(histItem);
+    showToast('✅ '+dev.name+' の操作を記録しました');
+  } catch(e) {
+    showToast('⚠️ 保存エラー。再試行してください');
+    document.getElementById('submitBtn').disabled=false;
+    return;
+  }
+
+  save(); updateHeader(); checkOverdue();
+  selectedDeviceId=null; selectedStaffId=null; selectedStatus=null;
+  document.getElementById('selectedBanner').style.display='none';
+  document.getElementById('actionForm').style.display='none';
+  document.getElementById('destInput').value='';
+  document.getElementById('submitBtn').disabled=false;
+  renderDeviceGrid();
+}
+
+/* ===== INVENTORY ===== */
+function renderInventory(){
+  document.getElementById('invTime').textContent=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})+' 更新';
+  document.getElementById('statAvail').textContent=devices.filter(d=>d.status==='available').length;
+  document.getElementById('statOut').textContent=devices.filter(d=>d.status==='out').length;
+  document.getElementById('statRes').textContent=devices.filter(d=>d.status==='reserved').length;
+  const list=currentFilter==='all'?devices:devices.filter(d=>d.status===currentFilter);
+  document.getElementById('invList').innerHTML=list.map(d=>{
+    const sw=staff.find(x=>x.name===d.who);
+    return`<div class="inv-item">
+      <div class="inv-img-wrap">${deviceImg(d,72,0)}</div>
+      <div class="inv-body">
+        <div class="inv-name">${d.name}</div>
+        <div class="inv-model">${d.model} · ${d.id}</div>
+        <div class="inv-status-row">
+          <span class="inv-badge ${stClass(d.status)}">${stLabel(d.status)}</span>
+          ${d.who?`<span class="inv-who">${sw&&sw.photo?`<img src="${sw.photo}" style="width:16px;height:16px;border-radius:50%;vertical-align:middle;">`:sw?sw.emoji:'👤'} ${d.who}</span>`:''}
+        </div>
+        ${d.dest?`<div class="inv-dest">📍 ${d.dest}</div>`:''}
+        ${d.status==='out'&&d.outDate ? `<div class="inv-dest">📅 持出: ${new Date(d.outDate).toLocaleDateString('ja-JP')}</div>${overdueInfo(d)}` : ''}      </div></div>`;
+  }).join('');
+}
+function setFilter(f,el){currentFilter=f;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderInventory();}
+
+/* ===== HISTORY ===== */
+function renderHistory(){
+  if(!history.length)return;
+  const sm={out:'🚗 持出',back:'🏠 持ち帰り',reserve:'📅 予約'};
+  document.getElementById('histList').innerHTML=history.map(h=>`
+    <div class="hist-item">
+      <div class="hist-top"><div class="hist-device">${h.deviceName}</div><div class="hist-time">${h.time}</div></div>
+      <div class="hist-row">
+        ${h.avatar&&h.avatar.startsWith('data:')?`<img src="${h.avatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">`:
+          `<span>${h.avatar||'👤'}</span>`}
+        <span>${h.staffName}</span><span>→</span>
+        <span style="font-weight:700;">${sm[h.status]||h.status}</span>
+        ${h.dest?`<span style="color:var(--text3);">/ ${h.dest}</span>`:''}
+      </div>
+    </div>`).join('');
+}
+function clearHistory(){if(!confirm('履歴をすべて削除しますか？'))return;history=[];save();document.getElementById('histList').innerHTML='<div style="text-align:center;color:var(--text3);padding:40px 0;font-size:14px;">まだ履歴がありません</div>';}
+
+/* ===== SETTINGS ===== */
+function renderSettings(){
+  /* Staff */
+  document.getElementById('staffSettingsList').innerHTML=staff.map(s=>`
+    <div class="staff-setting-card" id="sc-${s.id}">
+      <div onclick="triggerStaffPhoto(${s.id})" title="タップして写真を変更">
+        ${s.photo
+          ?`<img class="staff-setting-photo" src="${s.photo}" id="simg-${s.id}">`
+          :`<div class="staff-setting-emoji" id="simg-${s.id}" style="background:${s.color}">${s.emoji}</div>`}
+      </div>
+      <div class="staff-setting-info">
+        <input class="staff-setting-name-input" type="text" value="${s.name}" id="sname-${s.id}" placeholder="名前を入力" onchange="updateStaffName(${s.id},this.value)">
+        <div class="staff-setting-hint">📸 アイコンをタップして写真を変更</div>
+      </div>
+      <div class="staff-setting-actions">
+        <button class="icon-btn danger" onclick="deleteStaff(${s.id})">🗑</button>
+      </div>
+    </div>
+  `).join('');
+
+  /* Devices */
+  document.getElementById('deviceSettingsList').innerHTML=devices.map(d=>`
+    <div class="device-setting-card" id="dc-${d.id}">
+      <div class="device-setting-top">
+        <div onclick="triggerDevicePhoto('${d.id}')" title="タップして写真を変更">
+          ${d.photo
+            ?`<img class="device-setting-img" src="${d.photo}" id="dimg-${d.id}">`
+            :`<div class="device-setting-emoji" id="dimg-${d.id}">${d.icon}</div>`}
+        </div>
+        <div class="device-setting-fields">
+          <input class="setting-input" type="text" value="${d.name}"  id="dname-${d.id}"  placeholder="品名" style="font-weight:700;">
+          <input class="setting-input" type="text" value="${d.model}" id="dmodel-${d.id}" placeholder="型番">
+          <input class="setting-input" type="text" value="${d.id}"    id="did-${d.id}"    placeholder="ID（QRコード用）" style="font-size:11px;color:var(--text3);">
+        </div>
+      </div>
+      <div class="device-setting-actions">
+        <button class="save-btn" onclick="saveDevice('${d.id}')">💾 保存</button>
+        <button class="del-btn"  onclick="showQRCode('${d.id}')" style="background:white;color:#0C447C;border-color:#185FA5;">📲 QR</button>
+        <button class="del-btn"  onclick="deleteDevice('${d.id}')">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* Staff photo */
+function triggerStaffPhoto(id){
+  pendingPhotoTarget='staff'; pendingPhotoId=id;
+  document.getElementById('fileStaffPhoto').click();
+}
+document.getElementById('fileStaffPhoto').addEventListener('change',function(){
+  if(!this.files[0])return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const s=staff.find(x=>x.id===pendingPhotoId);
+    if(s){s.photo=e.target.result;saveStaffToSupabase();save();renderSettings();showToast('✅ 写真を更新しました');}
+  };
+  reader.readAsDataURL(this.files[0]);
+  this.value='';
+});
+
+/* Device photo */
+function triggerDevicePhoto(id){
+  pendingPhotoTarget='device'; pendingPhotoId=id;
+  document.getElementById('fileDevicePhoto').click();
+}
+document.getElementById('fileDevicePhoto').addEventListener('change',function(){
+  if(!this.files[0])return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const d=devices.find(x=>x.id===pendingPhotoId);
+    if(d){d.photo=e.target.result;saveDeviceToSupabase(d);save();renderSettings();showToast('✅ 写真を更新しました');}
+  };
+  reader.readAsDataURL(this.files[0]);
+  this.value='';
+});
+
+/* Staff CRUD */
+function updateStaffName(id,val){const s=staff.find(x=>x.id===id);if(s){s.name=val;saveStaffToSupabase();save();}}
+function deleteStaff(id){
+  if(!confirm('このスタッフを削除しますか？'))return;
+  staff=staff.filter(s=>s.id!==id);
+  sb.from('staff').delete().eq('id',id);
+  save();renderSettings();showToast('🗑 スタッフを削除しました');
+}
+function addStaff(){
+  const colors=['#B5D4F4','#9FE1CB','#F5C4B3','#FAC775','#F4C0D1','#CFC6F0','#C0DD97'];
+  const emojis=['👤','👨','👩','🧑','👦','👧'];
+  const newId=Date.now();
+  staff.push({id:newId,name:'新規スタッフ',emoji:emojis[staff.length%emojis.length],photo:'',color:colors[staff.length%colors.length]});
+  saveStaffToSupabase();save();renderSettings();showToast('✅ スタッフを追加しました');
+  setTimeout(()=>document.getElementById('sname-'+newId)?.focus(),200);
+}
+
+/* Device CRUD */
+function saveDevice(id){
+  const d=devices.find(x=>x.id===id);
+  if(!d)return;
+  const newName =document.getElementById('dname-'+id)?.value.trim();
+  const newModel=document.getElementById('dmodel-'+id)?.value.trim();
+  const newId   =document.getElementById('did-'+id)?.value.trim();
+  if(newName)d.name=newName;
+  if(newModel)d.model=newModel;
+  if(newId&&newId!==id){
+    if(devices.find(x=>x.id===newId&&x!==d)){showToast('⚠️ そのIDはすでに使われています');return;}
+    d.id=newId;
+  }
+  save();saveDeviceToSupabase(d);renderSettings();renderDeviceGrid();showToast('💾 保存しました');
+}
+function deleteDevice(id){
+  if(!confirm('このデモ機を削除しますか？'))return;
+  devices=devices.filter(d=>d.id!==id);
+  sb.from('devices').delete().eq('id',id);
+  save();renderSettings();renderDeviceGrid();updateHeader();showToast('🗑 デモ機を削除しました');
+}
+function addDevice(){
+  const icons=['💻','📱','⌚','📺','🎧','🔊','🖥️','⌨️','🔌','🏷️'];
+  const newId='D'+(Date.now()%100000);
+  devices.push({id:newId,name:'新規デモ機',model:'型番未設定',icon:icons[devices.length%icons.length],photo:'',status:'available',who:'',dest:''});
+  saveDevicesToSupabase();save();renderSettings();renderDeviceGrid();updateHeader();showToast('✅ デモ機を追加しました');
+}
+
+/* Reset */
+function resetAll(){
+  if(!confirm('すべてのデータ（スタッフ・デモ機・履歴）をリセットしますか？\nこの操作は元に戻せません。'))return;
+  staff=JSON.parse(JSON.stringify(DEFAULT_STAFF));
+  devices=JSON.parse(JSON.stringify(DEFAULT_DEVICES));
+  history=[];
+  trySave('demoStaff', staff);
+  trySave('demoDevices', devices);
+  trySave('demoHistory', history);
+  location.reload();
+}
+
+/* ===== MODAL ===== */
+function openDeviceModal(){
+  document.getElementById('modalDeviceList').innerHTML=devices.map(d=>`
+    <div class="modal-device" onclick="selectDeviceFromModal('${d.id}')">
+      <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${deviceImg(d,40,6)}</div>
+      <div class="modal-device-info">
+        <div class="modal-device-name">${d.name}</div>
+        <div class="modal-device-model">${d.model} · ${d.id}</div>
+      </div>
+      <span class="st-badge ${stClass(d.status)}">${stLabel(d.status)}</span>
+    </div>`).join('');
+  document.getElementById('deviceModal').classList.add('open');
+}
+function closeDeviceModal(){document.getElementById('deviceModal').classList.remove('open');}
+function closeModalOnOverlay(e){if(e.target===document.getElementById('deviceModal'))closeDeviceModal();}
+function selectDeviceFromModal(id){closeDeviceModal();selectDevice(id);}
+
+/* ===== QR SCAN ===== */
+function startQRScan(){
+  if(!navigator.mediaDevices?.getUserMedia){alert('カメラ非対応のブラウザです');return;}
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
+    .then(stream=>{
+      qrStream=stream;
+      const v=document.getElementById('qr-video');
+      v.srcObject=stream; v.style.display='block';
+      document.getElementById('scanTap').style.display='none';
+      document.getElementById('stopBtn').style.display='inline-block';
+      qrCanvas=document.createElement('canvas');
+      qrCtx=qrCanvas.getContext('2d');
+      v.addEventListener('loadedmetadata',()=>{qrCanvas.width=v.videoWidth;qrCanvas.height=v.videoHeight;scanFrame(v);});
+    }).catch(()=>alert('カメラへのアクセスが許可されませんでした'));
+}
+function scanFrame(v){
+  if(!qrStream)return;
+  if(v.readyState===v.HAVE_ENOUGH_DATA){
+    qrCtx.drawImage(v,0,0,qrCanvas.width,qrCanvas.height);
+    const img=qrCtx.getImageData(0,0,qrCanvas.width,qrCanvas.height);
+    const code=typeof jsQR!=='undefined'&&jsQR(img.data,img.width,img.height);
+    if(code){
+      const matched=devices.find(d=>d.id===code.data||d.name===code.data||d.model===code.data);
+      if(matched){stopQRScan();selectDevice(matched.id);showToast('📷 QR読み取り: '+matched.name);return;}
+    }
+  }
+  qrAnimId=requestAnimationFrame(()=>scanFrame(v));
+}
+function stopQRScan(){
+  if(qrStream){qrStream.getTracks().forEach(t=>t.stop());qrStream=null;}
+  if(qrAnimId){cancelAnimationFrame(qrAnimId);qrAnimId=null;}
+  document.getElementById('qr-video').style.display='none';
+  document.getElementById('scanTap').style.display='block';
+  document.getElementById('stopBtn').style.display='none';
+}
+
+
+/* ===== QR CODE GENERATION ===== */
+let currentQRDevice = null;
+
+function makeQR(container, text, size) {
+  container.innerHTML = '';
+  return new QRCode(container, {
+    text: text,
+    width: size, height: size,
+    colorDark: '#0C447C',
+    colorLight: '#FFFFFF',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+function getQRImage(container) {
+  // qrcodejs renders either a canvas or an img depending on browser
+  const canvas = container.querySelector('canvas');
+  const img    = container.querySelector('img');
+  return canvas ? canvas.toDataURL('image/png') : (img ? img.src : '');
+}
+
+function showQRCode(deviceId) {
+  const d = devices.find(x => x.id === deviceId);
+  if (!d) return;
+  currentQRDevice = d;
+  document.getElementById('qrModalTitle').textContent = d.name;
+  document.getElementById('qrModalSub').textContent   = d.model + ' · ' + d.id;
+  const wrap = document.getElementById('qrCanvasWrap');
+  makeQR(wrap, d.id, 200);
+  document.getElementById('qrModal').classList.add('open');
+}
+
+function closeQRModal() {
+  document.getElementById('qrModal').classList.remove('open');
+  currentQRDevice = null;
+}
+
+function saveQRImage() {
+  if (!currentQRDevice) return;
+  const d = currentQRDevice;
+  const tmp = document.createElement('div');
+  tmp.style.cssText = 'position:fixed;left:-9999px;top:0;';
+  document.body.appendChild(tmp);
+  makeQR(tmp, d.id, 400);
+  setTimeout(() => {
+    // QRコードの画像を取得
+    const qrImg = tmp.querySelector('img') || tmp.querySelector('canvas');
+    let imgSrc = '';
+    if (qrImg && qrImg.tagName === 'CANVAS') {
+      imgSrc = qrImg.toDataURL('image/png');
+    } else if (qrImg) {
+      imgSrc = qrImg.src;
+    }
+    document.body.removeChild(tmp);
+
+    if (!imgSrc) { showToast('⚠️ 画像の生成に失敗しました'); return; }
+
+    // ダウンロードリンクを作成
+    const a = document.createElement('a');
+    a.href = imgSrc;
+    a.download = 'QR_' + d.id + '_' + d.name + '.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('📥 QRコードを保存しました');
+  }, 400);
+}
+
+function printAllQR() {
+  const pa = document.getElementById('printArea');
+  const tmp = document.createElement('div');
+  tmp.style.cssText = 'position:fixed;left:-9999px;top:0;display:flex;flex-wrap:wrap;';
+  document.body.appendChild(tmp);
+  const wrappers = devices.map(d => {
+    const w = document.createElement('div');
+    tmp.appendChild(w);
+    makeQR(w, d.id, 160);
+    return { d, w };
+  });
+  setTimeout(() => {
+    const items = wrappers.map(({ d, w }) => {
+      const imgSrc = getQRImage(w);
+      return `<div class="qr-all-item">
+        <img src="${imgSrc}" style="width:120px;height:120px;">
+        <div class="qr-all-name">${d.name}</div>
+        <div class="qr-all-model">${d.model}</div>
+        <div class="qr-all-id">ID: ${d.id}</div>
+      </div>`;
+    }).join('');
+    document.body.removeChild(tmp);
+    pa.style.display = 'block';
+    pa.innerHTML = '<div class="qr-all-grid">' + items + '</div>';
+    window.print();
+    setTimeout(() => { pa.style.display = 'none'; }, 1500);
+  }, 500);
+}
+
+/* ===== OVERDUE CHECK ===== */
+const LOAN_DAYS = 7;
+
+function daysSinceOut(d) {
+  if(!d.outDate || d.status!=='out') return null;
+  const diff = Date.now() - new Date(d.outDate).getTime();
+  return Math.floor(diff / (1000*60*60*24));
+}
+
+function overdueInfo(d) {
+  const days = daysSinceOut(d);
+  if(days === null) return '';
+  if(days >= LOAN_DAYS) {
+    const over = days - LOAN_DAYS;
+    return `<span class="inv-overdue-badge">🚨 期限超過 ${over>0?over+'日超':'当日'}</span>`;
+  }
+  const rem = LOAN_DAYS - days;
+  if(rem <= 2) return `<span class="inv-overdue-badge" style="background:#FAEEDA;border-color:#EF9F27;color:#633806;">⏰ 返却まで${rem}日</span>`;
+  return '';
+}
+
+function checkOverdue() {
+  const overdue = devices.filter(d => {
+    const days = daysSinceOut(d);
+    return days !== null && days >= LOAN_DAYS;
+  });
+  const banner = document.getElementById('overdueBanner');
+  const list   = document.getElementById('overdueList');
+  if(overdue.length === 0) { banner.style.display='none'; return; }
+  banner.style.display = 'block';
+  list.innerHTML = overdue.map(d => {
+    const days = daysSinceOut(d);
+    const over = days - LOAN_DAYS;
+    return `<div class="overdue-banner-item">
+      <span>${d.icon}</span>
+      <span style="font-weight:700;">${d.name}</span>
+      <span class="overdue-days">${over>0?over+'日超過':'期限当日'}</span>
+      <span style="color:#A32D2D;">${d.who} / ${d.dest||'持出先不明'}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ===== INIT ===== */
+renderDeviceGrid();
+updateHeader();
+loadFromSupabase().then(() => subscribeRealtime());
+document.getElementById('qrModal').addEventListener('click', function(e) {
+  if (e.target === this) closeQRModal();
+});
+</script>
+</body>
+</html>
