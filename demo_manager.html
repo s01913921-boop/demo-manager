@@ -500,9 +500,6 @@ async function loadFromSupabase() {
         status: d.status||'available', who: d.who||'', dest: d.dest||'',
         outDate: d.out_date||null, category: d.category||''
       }));
-    } else {
-      // 初回：デフォルトデータをSupabaseに保存
-      await saveDevicesToSupabase();
     }
 
     // スタッフ読み込み
@@ -512,8 +509,6 @@ async function loadFromSupabase() {
         id: s.id, name: s.name, emoji: s.emoji||'👤',
         photo: s.photo||'', color: s.color||'#B5D4F4'
       }));
-    } else {
-      await saveStaffToSupabase();
     }
 
     // 履歴読み込み
