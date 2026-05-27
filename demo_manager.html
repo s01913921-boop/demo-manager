@@ -932,11 +932,17 @@ function saveDevice(id){
   }
   save();saveDeviceToSupabase(d);renderSettings();renderDeviceGrid();showToast('💾 保存しました');
 }
-function deleteDevice(id){
+async function deleteDevice(id){
   if(!confirm('このデモ機を削除しますか？'))return;
   devices=devices.filter(d=>d.id!==id);
-  sb.from('devices').delete().eq('id',id);
-  save();renderSettings();renderDeviceGrid();updateHeader();showToast('🗑 デモ機を削除しました');
+  try {
+    const { error } = await sb.from('devices').delete().eq('id',id);
+    if(error) throw error;
+    save();renderSettings();renderDeviceGrid();updateHeader();showToast('🗑 デモ機を削除しました');
+  } catch(e) {
+    showToast('⚠️ 削除に失敗しました。再試行してください');
+    await loadFromSupabase();
+  }
 }
 function addDevice(){
   const icons=['💻','📱','⌚','📺','🎧','🔊','🖥️','⌨️','🔌','🏷️'];
