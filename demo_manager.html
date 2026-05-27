@@ -195,6 +195,14 @@ input[type=file] { display:none; }
 .stats-rank-bar-fill { height:100%; background:#0C447C; border-radius:3px; }
 .stats-rank-count { font-size:13px; font-weight:700; color:#0C447C; flex-shrink:0; }
 
+/* Lightbox */
+.lightbox { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:300; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.25s; padding:20px; }
+.lightbox.open { opacity:1; pointer-events:all; }
+.lightbox-img { max-width:100%; max-height:80vh; border-radius:12px; object-fit:contain; transform:scale(0.9); transition:transform 0.25s; box-shadow:0 8px 40px rgba(0,0,0,0.5); }
+.lightbox.open .lightbox-img { transform:scale(1); }
+.lightbox-name { position:absolute; bottom:40px; left:0; right:0; text-align:center; color:white; font-size:14px; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,0.8); }
+.lightbox-close { position:absolute; top:20px; right:20px; color:white; font-size:28px; cursor:pointer; background:rgba(0,0,0,0.4); border:none; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
+
 /* Overdue warning */
 .overdue-banner { background:#FCEBEB; border:1.5px solid #E24B4A; border-radius:var(--radius); padding:14px 16px; margin-bottom:14px; display:none; }
 .overdue-banner-title { font-size:13px; font-weight:700; color:#791F1F; margin-bottom:6px; }
@@ -377,6 +385,13 @@ input[type=file] { display:none; }
     </div>
 
   </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img class="lightbox-img" id="lightboxImg" src="" alt="">
+  <div class="lightbox-name" id="lightboxName"></div>
 </div>
 
 <!-- Device modal -->
@@ -618,7 +633,13 @@ function staffImg(s,size=44){
     ? `<img class="staff-photo" src="${s.photo}" style="width:${size}px;height:${size}px;">`
     : `<div class="staff-avatar-emoji" style="width:${size}px;height:${size}px;background:${s.color}">${s.emoji}</div>`;
 }
-function deviceImg(d,size=48,radius=8){
+function deviceImgWithTap(d, size=48, radius=8) {
+  if(d.photo) {
+    return `<img src="${d.photo}" style="width:${size}px;height:${size}px;border-radius:${radius}px;object-fit:cover;cursor:pointer;" onclick="openLightbox('${d.photo}','${d.name}')">`;
+  }
+  return `<span style="font-size:${Math.round(size*0.6)}px;">${d.icon}</span>`;
+}
+function deviceImg(d, size=48, radius=8) {
   return d.photo
     ? `<img src="${d.photo}" style="width:${size}px;height:${size}px;border-radius:${radius}px;object-fit:cover;">`
     : `<span style="font-size:${Math.round(size*0.6)}px;">${d.icon}</span>`;
@@ -720,7 +741,7 @@ function renderInventory(){
   document.getElementById('invList').innerHTML=list.map(d=>{
     const sw=staff.find(x=>x.name===d.who);
     return`<div class="inv-item">
-      <div class="inv-img-wrap">${deviceImg(d,72,0)}</div>
+      <div class="inv-img-wrap">${deviceImgWithTap(d,72,0)}</div>
       <div class="inv-body">
         <div class="inv-name">${d.name}</div>
         <div class="inv-model">${d.model} · ${d.id}</div>
@@ -759,7 +780,7 @@ function renderSettings(){
     <div class="staff-setting-card" id="sc-${s.id}">
       <div onclick="triggerStaffPhoto(${s.id})" title="タップして写真を変更">
         ${s.photo
-          ?`<img class="staff-setting-photo" src="${s.photo}" id="simg-${s.id}">`
+          ?`<img class="staff-setting-photo" src="${s.photo}" id="simg-${s.id}" onclick="openLightbox('${s.photo}','${s.name}')" style="cursor:pointer;">`
           :`<div class="staff-setting-emoji" id="simg-${s.id}" style="background:${s.color}">${s.emoji}</div>`}
       </div>
       <div class="staff-setting-info">
@@ -778,7 +799,7 @@ function renderSettings(){
       <div class="device-setting-top">
         <div onclick="triggerDevicePhoto('${d.id}')" title="タップして写真を変更">
           ${d.photo
-            ?`<img class="device-setting-img" src="${d.photo}" id="dimg-${d.id}">`
+            ?`<img class="device-setting-img" src="${d.photo}" id="dimg-${d.id}" onclick="openLightbox('${d.photo}','${d.name}')" style="cursor:pointer;">`
             :`<div class="device-setting-emoji" id="dimg-${d.id}">${d.icon}</div>`}
         </div>
         <div class="device-setting-fields">
@@ -1034,6 +1055,19 @@ function printAllQR() {
     window.print();
     setTimeout(() => { pa.style.display = 'none'; }, 1500);
   }, 500);
+}
+
+/* ===== LIGHTBOX ===== */
+function openLightbox(src, name) {
+  if(!src || !src.startsWith('data:')) return; // 写真がない場合は何もしない
+  document.getElementById('lightboxImg').src  = src;
+  document.getElementById('lightboxName').textContent = name || '';
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 /* ===== REFRESH ===== */
