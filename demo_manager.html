@@ -173,6 +173,28 @@ body { font-family: -apple-system,'Hiragino Sans','Yu Gothic UI',sans-serif; bac
 
 input[type=file] { display:none; }
 
+/* Stats */
+.stats-period-btn { padding:6px 12px; border:1px solid var(--border); border-radius:20px; font-size:11px; font-weight:700; cursor:pointer; background:white; color:var(--text2); font-family:inherit; -webkit-tap-highlight-color:transparent; }
+.stats-period-btn:active { background:#0C447C; color:white; }
+.stats-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; margin-bottom:14px; }
+.stats-card-title { font-size:13px; font-weight:700; color:var(--text2); margin-bottom:12px; }
+.stats-total { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+.stats-total-item { background:var(--surface2); border-radius:var(--radius-sm); padding:10px 8px; text-align:center; }
+.stats-total-num { font-size:24px; font-weight:700; color:#0C447C; }
+.stats-total-label { font-size:10px; color:var(--text2); margin-top:2px; }
+.stats-rank-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.stats-rank-item:last-child { border-bottom:none; }
+.stats-rank-num { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+.rank-1 { background:#FFD700; color:#5a4000; }
+.rank-2 { background:#C0C0C0; color:#3a3a3a; }
+.rank-3 { background:#CD7F32; color:#4a2800; }
+.rank-other { background:var(--surface2); color:var(--text3); }
+.stats-rank-bar-wrap { flex:1; min-width:0; }
+.stats-rank-name { font-size:12px; font-weight:700; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.stats-rank-bar { height:6px; background:#E6F1FB; border-radius:3px; overflow:hidden; }
+.stats-rank-bar-fill { height:100%; background:#0C447C; border-radius:3px; }
+.stats-rank-count { font-size:13px; font-weight:700; color:#0C447C; flex-shrink:0; }
+
 /* Overdue warning */
 .overdue-banner { background:#FCEBEB; border:1.5px solid #E24B4A; border-radius:var(--radius); padding:14px 16px; margin-bottom:14px; display:none; }
 .overdue-banner-title { font-size:13px; font-weight:700; color:#791F1F; margin-bottom:6px; }
@@ -211,12 +233,16 @@ input[type=file] { display:none; }
       <div class="header-title">📦 デモ機管理</div>
       <div class="header-sub" id="headerSub">読み込み中...</div>
     </div>
-    <img src="data:image/png;base64,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" style="width:36px;height:36px;object-fit:contain;">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <img src="data:image/png;base64,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" style="width:36px;height:36px;object-fit:contain;">
+      <button onclick="refreshData()" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:22px;cursor:pointer;padding:4px 8px;border-radius:8px;" title="データを更新">🔄</button>
+    </div>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('scan')"><span class="tab-icon">📷</span>スキャン</div>
     <div class="tab" onclick="switchTab('inventory')"><span class="tab-icon">📋</span>在庫一覧</div>
     <div class="tab" onclick="switchTab('history')"><span class="tab-icon">🕐</span>履歴</div>
+    <div class="tab" onclick="switchTab('stats')"><span class="tab-icon">📊</span>統計</div>
     <div class="tab" onclick="switchTab('settings')"><span class="tab-icon">⚙️</span>設定</div>
   </div>
   <div class="content">
@@ -292,6 +318,37 @@ input[type=file] { display:none; }
         <button onclick="clearHistory()" style="font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;font-family:inherit;">🗑 クリア</button>
       </div>
       <div class="hist-list" id="histList"><div style="text-align:center;color:var(--text3);padding:40px 0;font-size:14px;">まだ履歴がありません</div></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="page" id="page-stats">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="font-size:16px;font-weight:700;">📊 統計</div>
+      </div>
+      <!-- 期間指定 -->
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">📅 集計期間</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;flex-direction:column;gap:3px;flex:1;">
+            <label style="font-size:10px;color:var(--text3);">開始日</label>
+            <input type="date" id="statsFrom" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:white;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px;flex:1;">
+            <label style="font-size:10px;color:var(--text3);">終了日</label>
+            <input type="date" id="statsTo" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:white;">
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+          <button onclick="setStatsPeriod(0)" class="stats-period-btn">今月</button>
+          <button onclick="setStatsPeriod(1)" class="stats-period-btn">先月</button>
+          <button onclick="setStatsPeriod(3)" class="stats-period-btn">3ヶ月</button>
+          <button onclick="setStatsPeriod(6)" class="stats-period-btn">6ヶ月</button>
+          <button onclick="setStatsPeriod(12)" class="stats-period-btn">1年</button>
+        </div>
+        <button onclick="renderStats()" style="width:100%;margin-top:10px;padding:10px;background:#0C447C;color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">集計する</button>
+      </div>
+      <!-- 集計結果 -->
+      <div id="statsResult"></div>
     </div>
 
     <!-- SETTINGS -->
@@ -536,12 +593,15 @@ function save() {
 
 /* ===== TABS ===== */
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['scan','inventory','history','settings'][i]===tab));
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['scan','inventory','history','stats','settings'][i]===tab));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   if(tab==='inventory') renderInventory();
   if(tab==='history')   renderHistory();
   if(tab==='settings')  renderSettings();
+  if(tab==='stats') {
+    setStatsPeriod(0);
+  }
 }
 
 /* ===== HELPERS ===== */
@@ -974,6 +1034,102 @@ function printAllQR() {
     window.print();
     setTimeout(() => { pa.style.display = 'none'; }, 1500);
   }, 500);
+}
+
+/* ===== REFRESH ===== */
+async function refreshData() {
+  const btn = document.querySelector('[onclick="refreshData()"]');
+  if(btn) { btn.style.transform='rotate(180deg)'; btn.style.transition='transform 0.5s'; }
+  await loadFromSupabase();
+  if(btn) { setTimeout(()=>{ btn.style.transform=''; }, 500); }
+}
+
+/* ===== STATS ===== */
+function setStatsPeriod(months) {
+  const now = new Date();
+  const to  = now.toISOString().split('T')[0];
+  let from;
+  if(months === 0) {
+    from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  } else if(months === 1) {
+    const f = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    from = f.toISOString().split('T')[0];
+    const t = new Date(now.getFullYear(), now.getMonth(), 0);
+    document.getElementById('statsTo').value = t.toISOString().split('T')[0];
+  } else {
+    from = new Date(now.getFullYear(), now.getMonth()-months, now.getDate()).toISOString().split('T')[0];
+  }
+  document.getElementById('statsFrom').value = from;
+  if(months !== 1) document.getElementById('statsTo').value = to;
+}
+
+async function renderStats() {
+  const fromVal = document.getElementById('statsFrom').value;
+  const toVal   = document.getElementById('statsTo').value;
+  if(!fromVal || !toVal) { showToast('⚠️ 期間を指定してください'); return; }
+
+  const fromDate = new Date(fromVal + 'T00:00:00');
+  const toDate   = new Date(toVal   + 'T23:59:59');
+
+  // Supabaseから期間内の履歴を取得
+  let filtered = [];
+  try {
+    const { data } = await sb.from('history')
+      .select('*')
+      .gte('created_at', fromDate.toISOString())
+      .lte('created_at', toDate.toISOString())
+      .eq('status', 'out');
+    filtered = data || [];
+  } catch(e) {
+    // オフライン時はローカル履歴を使用
+    filtered = history.filter(h => {
+      const t = new Date(h.time); return t >= fromDate && t <= toDate && h.status === 'out';
+    });
+  }
+
+  const total     = filtered.length;
+  const staffMap  = {};
+  const deviceMap = {};
+
+  filtered.forEach(h => {
+    const sn = h.staff_name || h.staffName || '-';
+    const dn = h.device_name || h.deviceName || '-';
+    staffMap[sn]  = (staffMap[sn]  || 0) + 1;
+    deviceMap[dn] = (deviceMap[dn] || 0) + 1;
+  });
+
+  const staffRank  = Object.entries(staffMap).sort((a,b)=>b[1]-a[1]);
+  const deviceRank = Object.entries(deviceMap).sort((a,b)=>b[1]-a[1]);
+  const maxS = staffRank[0]?.[1]  || 1;
+  const maxD = deviceRank[0]?.[1] || 1;
+
+  function rankClass(i) { return ['rank-1','rank-2','rank-3'][i] || 'rank-other'; }
+  function rankRows(arr, max) {
+    return arr.map(([ name, cnt ], i) => `
+      <div class="stats-rank-item">
+        <div class="stats-rank-num ${rankClass(i)}">${i+1}</div>
+        <div class="stats-rank-bar-wrap">
+          <div class="stats-rank-name">${name}</div>
+          <div class="stats-rank-bar"><div class="stats-rank-bar-fill" style="width:${Math.round(cnt/max*100)}%"></div></div>
+        </div>
+        <div class="stats-rank-count">${cnt}回</div>
+      </div>`).join('');
+  }
+
+  document.getElementById('statsResult').innerHTML = `
+    <div class="stats-total">
+      <div class="stats-total-item"><div class="stats-total-num">${total}</div><div class="stats-total-label">総持出回数</div></div>
+      <div class="stats-total-item"><div class="stats-total-num">${staffRank.length}</div><div class="stats-total-label">活動スタッフ</div></div>
+      <div class="stats-total-item"><div class="stats-total-num">${deviceRank.length}</div><div class="stats-total-label">稼働デモ機</div></div>
+    </div>
+    <div class="stats-card">
+      <div class="stats-card-title">👤 スタッフ別 持出ランキング</div>
+      ${staffRank.length ? rankRows(staffRank, maxS) : '<div style="text-align:center;color:var(--text3);padding:20px 0;font-size:13px;">データなし</div>'}
+    </div>
+    <div class="stats-card">
+      <div class="stats-card-title">📦 デモ機別 稼働ランキング</div>
+      ${deviceRank.length ? rankRows(deviceRank, maxD) : '<div style="text-align:center;color:var(--text3);padding:20px 0;font-size:13px;">データなし</div>'}
+    </div>`;
 }
 
 /* ===== OVERDUE CHECK ===== */
