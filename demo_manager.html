@@ -316,6 +316,14 @@ input[type=file] { display:none; }
         <div class="filter-chip" onclick="setFilter('out',this)">持出中</div>
         <div class="filter-chip" onclick="setFilter('reserved',this)">予約済</div>
       </div>
+      <div class="filter-row" id="categoryFilterRow">
+        <div class="filter-chip active" onclick="setCategoryFilter('all',this)">全カテゴリ</div>
+        <div class="filter-chip" onclick="setCategoryFilter('シャワチェアー',this)">🪑 シャワチェアー</div>
+        <div class="filter-chip" onclick="setCategoryFilter('浴槽台',this)">🛁 浴槽台</div>
+        <div class="filter-chip" onclick="setCategoryFilter('バスグリップ',this)">🤲 バスグリップ</div>
+        <div class="filter-chip" onclick="setCategoryFilter('入浴その他',this)">🚿 入浴その他</div>
+        <div class="filter-chip" onclick="setCategoryFilter('ポータブルトイレ',this)">🚽 ポータブルトイレ</div>
+      </div>
       <div class="inv-list" id="invList"></div>
     </div>
 
@@ -445,34 +453,36 @@ const DEFAULT_STAFF = [
   {id:4,name:'山田',emoji:'👨‍🔬',photo:'',color:'#FAC775'},
   {id:5,name:'高橋',emoji:'👩‍🔬',photo:'',color:'#F4C0D1'},
 ];
+const CATEGORIES = ['シャワチェアー','浴槽台','バスグリップ','入浴その他','ポータブルトイレ'];
+
 const DEFAULT_DEVICES = [
-  {id:'D01',name:'MacBook Pro 14"',model:'MKGP3J/A',icon:'💻',photo:'',status:'available',who:'',dest:''},
-  {id:'D02',name:'MacBook Air M3', model:'MRXN3J/A',icon:'💻',photo:'',status:'out',who:'田中',dest:'株式会社ABC 鈴木部長'},
-  {id:'D03',name:'iPad Pro 11"',   model:'MNXD3J/A',icon:'📱',photo:'',status:'available',who:'',dest:''},
-  {id:'D04',name:'iPad Air 5th',   model:'MM9L3J/A',icon:'📱',photo:'',status:'reserved',who:'佐藤',dest:'山田商事 来週火曜'},
-  {id:'D05',name:'iPhone 15 Pro',  model:'MTUN3J/A',icon:'📱',photo:'',status:'out',who:'鈴木',dest:'テスト株式会社'},
-  {id:'D06',name:'iPhone 15',      model:'MTP63J/A',icon:'📱',photo:'',status:'available',who:'',dest:''},
-  {id:'D07',name:'Apple Watch S9', model:'MRHN3J/A',icon:'⌚',photo:'',status:'available',who:'',dest:''},
-  {id:'D08',name:'Apple TV 4K',    model:'MN873J/A',icon:'📺',photo:'',status:'out',who:'山田',dest:'ホテル東京 展示用'},
-  {id:'D09',name:'AirPods Pro 2',  model:'MTJV3J/A',icon:'🎧',photo:'',status:'available',who:'',dest:''},
-  {id:'D10',name:'HomePod mini',   model:'MJ2D3J/A',icon:'🔊',photo:'',status:'reserved',who:'高橋',dest:'〇〇社デモ 来月'},
-  {id:'D11',name:'Mac Studio M2',  model:'MQFX3J/A',icon:'🖥️',photo:'',status:'available',who:'',dest:''},
-  {id:'D12',name:'Mac mini M4',    model:'MGNR3J/A',icon:'🖥️',photo:'',status:'available',who:'',dest:''},
-  {id:'D13',name:'Studio Display', model:'MMYW3J/A',icon:'🖥️',photo:'',status:'out',who:'田中',dest:'展示会場搬入'},
-  {id:'D14',name:'Magic Keyboard', model:'MK2C3J/A',icon:'⌨️',photo:'',status:'available',who:'',dest:''},
-  {id:'D15',name:'Beats Studio Pro',model:'MQTP3J/A',icon:'🎧',photo:'',status:'available',who:'',dest:''},
-  {id:'D16',name:'iPad mini 6th',  model:'MK7P3J/A',icon:'📱',photo:'',status:'out',who:'佐藤',dest:'学校法人〇〇 体験会'},
-  {id:'D17',name:'AirTag (4個set)',model:'MX542ZP/A',icon:'🏷️',photo:'',status:'available',who:'',dest:''},
-  {id:'D18',name:'MagSafe充電セット',model:'MHXH3ZA/A',icon:'🔌',photo:'',status:'available',who:'',dest:''},
-  {id:'D19',name:'MacBook Pro 16"',model:'MRW43J/A',icon:'💻',photo:'',status:'reserved',who:'鈴木',dest:'大手商社 プレゼン'},
-  {id:'D20',name:'Vision Pro',     model:'MQL93J/A',icon:'🥽',photo:'',status:'available',who:'',dest:''},
+  {id:'D01',name:'MacBook Pro 14"',model:'MKGP3J/A',icon:'💻',photo:'',status:'available',who:'',dest:'',category:'入浴その他'},
+  {id:'D02',name:'MacBook Air M3', model:'MRXN3J/A',icon:'💻',photo:'',status:'out',who:'田中',dest:'株式会社ABC 鈴木部長',category:'入浴その他'},
+  {id:'D03',name:'iPad Pro 11"',   model:'MNXD3J/A',icon:'📱',photo:'',status:'available',who:'',dest:'',category:'シャワチェアー'},
+  {id:'D04',name:'iPad Air 5th',   model:'MM9L3J/A',icon:'📱',photo:'',status:'reserved',who:'佐藤',dest:'山田商事 来週火曜',category:'シャワチェアー'},
+  {id:'D05',name:'iPhone 15 Pro',  model:'MTUN3J/A',icon:'📱',photo:'',status:'out',who:'鈴木',dest:'テスト株式会社',category:'浴槽台'},
+  {id:'D06',name:'iPhone 15',      model:'MTP63J/A',icon:'📱',photo:'',status:'available',who:'',dest:'',category:'浴槽台'},
+  {id:'D07',name:'Apple Watch S9', model:'MRHN3J/A',icon:'⌚',photo:'',status:'available',who:'',dest:'',category:'バスグリップ'},
+  {id:'D08',name:'Apple TV 4K',    model:'MN873J/A',icon:'📺',photo:'',status:'out',who:'山田',dest:'ホテル東京 展示用',category:'バスグリップ'},
+  {id:'D09',name:'AirPods Pro 2',  model:'MTJV3J/A',icon:'🎧',photo:'',status:'available',who:'',dest:'',category:'ポータブルトイレ'},
+  {id:'D10',name:'HomePod mini',   model:'MJ2D3J/A',icon:'🔊',photo:'',status:'reserved',who:'高橋',dest:'〇〇社デモ 来月',category:'ポータブルトイレ'},
+  {id:'D11',name:'Mac Studio M2',  model:'MQFX3J/A',icon:'🖥️',photo:'',status:'available',who:'',dest:'',category:'シャワチェアー'},
+  {id:'D12',name:'Mac mini M4',    model:'MGNR3J/A',icon:'🖥️',photo:'',status:'available',who:'',dest:'',category:'浴槽台'},
+  {id:'D13',name:'Studio Display', model:'MMYW3J/A',icon:'🖥️',photo:'',status:'out',who:'田中',dest:'展示会場搬入',category:'バスグリップ'},
+  {id:'D14',name:'Magic Keyboard', model:'MK2C3J/A',icon:'⌨️',photo:'',status:'available',who:'',dest:'',category:'入浴その他'},
+  {id:'D15',name:'Beats Studio Pro',model:'MQTP3J/A',icon:'🎧',photo:'',status:'available',who:'',dest:'',category:'入浴その他'},
+  {id:'D16',name:'iPad mini 6th',  model:'MK7P3J/A',icon:'📱',photo:'',status:'out',who:'佐藤',dest:'学校法人〇〇 体験会',category:'ポータブルトイレ'},
+  {id:'D17',name:'AirTag (4個set)',model:'MX542ZP/A',icon:'🏷️',photo:'',status:'available',who:'',dest:'',category:'入浴その他'},
+  {id:'D18',name:'MagSafe充電セット',model:'MHXH3ZA/A',icon:'🔌',photo:'',status:'available',who:'',dest:'',category:'入浴その他'},
+  {id:'D19',name:'MacBook Pro 16"',model:'MRW43J/A',icon:'💻',photo:'',status:'reserved',who:'鈴木',dest:'大手商社 プレゼン',category:'シャワチェアー'},
+  {id:'D20',name:'Vision Pro',     model:'MQL93J/A',icon:'🥽',photo:'',status:'available',who:'',dest:'',category:'ポータブルトイレ'},
 ];
 
 let staff   = JSON.parse(JSON.stringify(DEFAULT_STAFF));
 let devices = JSON.parse(JSON.stringify(DEFAULT_DEVICES));
 let history = [];
 
-let selectedDeviceId=null, selectedStaffId=null, selectedStatus=null, currentFilter='all';
+let selectedDeviceId=null, selectedStaffId=null, selectedStatus=null, currentFilter='all', currentCategoryFilter='all';
 let qrStream=null, qrCanvas=null, qrCtx=null, qrAnimId=null;
 let pendingPhotoTarget=null, pendingPhotoId=null;
 
@@ -488,7 +498,7 @@ async function loadFromSupabase() {
         id: d.id, name: d.name, model: d.model,
         icon: d.icon||'💻', photo: d.photo||'',
         status: d.status||'available', who: d.who||'', dest: d.dest||'',
-        outDate: d.out_date||null
+        outDate: d.out_date||null, category: d.category||''
       }));
     } else {
       // 初回：デフォルトデータをSupabaseに保存
@@ -552,7 +562,8 @@ async function saveDeviceToSupabase(dev) {
     id: dev.id, name: dev.name, model: dev.model,
     icon: dev.icon||'💻', photo: dev.photo||'',
     status: dev.status, who: dev.who||'', dest: dev.dest||'',
-    out_date: dev.outDate||null, updated_at: new Date().toISOString()
+    out_date: dev.outDate||null, category: dev.category||'',
+    updated_at: new Date().toISOString()
   });
 }
 
@@ -737,23 +748,62 @@ function renderInventory(){
   document.getElementById('statAvail').textContent=devices.filter(d=>d.status==='available').length;
   document.getElementById('statOut').textContent=devices.filter(d=>d.status==='out').length;
   document.getElementById('statRes').textContent=devices.filter(d=>d.status==='reserved').length;
-  const list=currentFilter==='all'?devices:devices.filter(d=>d.status===currentFilter);
-  document.getElementById('invList').innerHTML=list.map(d=>{
-    const sw=staff.find(x=>x.name===d.who);
-    return`<div class="inv-item">
-      <div class="inv-img-wrap">${deviceImgWithTap(d,72,0)}</div>
-      <div class="inv-body">
-        <div class="inv-name">${d.name}</div>
-        <div class="inv-model">${d.model} · ${d.id}</div>
-        <div class="inv-status-row">
-          <span class="inv-badge ${stClass(d.status)}">${stLabel(d.status)}</span>
-          ${d.who?`<span class="inv-who">${sw&&sw.photo?`<img src="${sw.photo}" style="width:16px;height:16px;border-radius:50%;vertical-align:middle;">`:sw?sw.emoji:'👤'} ${d.who}</span>`:''}
-        </div>
-        ${d.dest?`<div class="inv-dest">📍 ${d.dest}</div>`:''}
-        ${d.status==='out'&&d.outDate ? `<div class="inv-dest">📅 持出: ${new Date(d.outDate).toLocaleDateString('ja-JP')}</div>${overdueInfo(d)}` : ''}      </div></div>`;
-  }).join('');
+
+  // ステータスフィルター
+  let list = currentFilter==='all' ? devices : devices.filter(d=>d.status===currentFilter);
+  // カテゴリフィルター
+  if(currentCategoryFilter!=='all') list = list.filter(d=>d.category===currentCategoryFilter);
+
+  // カテゴリ別にグループ化して表示
+  if(currentCategoryFilter==='all') {
+    const grouped = {};
+    list.forEach(d => {
+      const cat = d.category || '未分類';
+      if(!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(d);
+    });
+    const catOrder = [...CATEGORIES, '未分類'];
+    let html = '';
+    catOrder.forEach(cat => {
+      if(!grouped[cat] || grouped[cat].length===0) return;
+      html += `<div style="font-size:12px;font-weight:700;color:var(--text2);margin:12px 0 6px;padding-left:2px;">📂 ${cat} (${grouped[cat].length}台)</div>`;
+      html += grouped[cat].map(d => renderInvItem(d)).join('');
+    });
+    document.getElementById('invList').innerHTML = html || '<div style="text-align:center;color:var(--text3);padding:30px 0;">該当するデモ機がありません</div>';
+  } else {
+    document.getElementById('invList').innerHTML = list.map(d=>renderInvItem(d)).join('') ||
+      '<div style="text-align:center;color:var(--text3);padding:30px 0;">該当するデモ機がありません</div>';
+  }
 }
-function setFilter(f,el){currentFilter=f;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderInventory();}
+
+function renderInvItem(d) {
+  const sw=staff.find(x=>x.name===d.who);
+  return`<div class="inv-item" style="margin-bottom:10px;">
+    <div class="inv-img-wrap">${deviceImgWithTap(d,72,0)}</div>
+    <div class="inv-body">
+      <div class="inv-name">${d.name}</div>
+      <div class="inv-model">${d.model} · ${d.id}</div>
+      <div class="inv-status-row">
+        <span class="inv-badge ${stClass(d.status)}">${stLabel(d.status)}</span>
+        ${d.who?`<span class="inv-who">${sw&&sw.photo?`<img src="${sw.photo}" style="width:16px;height:16px;border-radius:50%;vertical-align:middle;">`:sw?sw.emoji:'👤'} ${d.who}</span>`:''}
+      </div>
+      ${d.dest?`<div class="inv-dest">📍 ${d.dest}</div>`:''}
+      ${d.status==='out'&&d.outDate?`<div class="inv-dest">📅 持出: ${new Date(d.outDate).toLocaleDateString('ja-JP')}</div>${overdueInfo(d)}`:''}
+    </div></div>`;
+}
+
+function setFilter(f,el){
+  currentFilter=f;
+  document.querySelectorAll('#page-inventory .filter-row:first-of-type .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderInventory();
+}
+function setCategoryFilter(f,el){
+  currentCategoryFilter=f;
+  document.querySelectorAll('#categoryFilterRow .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderInventory();
+}
 
 /* ===== HISTORY ===== */
 function renderHistory(){
@@ -806,6 +856,10 @@ function renderSettings(){
           <input class="setting-input" type="text" value="${d.name}"  id="dname-${d.id}"  placeholder="品名" style="font-weight:700;">
           <input class="setting-input" type="text" value="${d.model}" id="dmodel-${d.id}" placeholder="型番">
           <input class="setting-input" type="text" value="${d.id}"    id="did-${d.id}"    placeholder="ID（QRコード用）" style="font-size:11px;color:var(--text3);">
+          <select class="setting-input" id="dcat-${d.id}" style="font-size:12px;">
+            <option value="">カテゴリ未設定</option>
+            ${CATEGORIES.map(c=>`<option value="${c}" ${d.category===c?'selected':''}>${c}</option>`).join('')}
+          </select>
         </div>
       </div>
       <div class="device-setting-actions">
@@ -873,8 +927,10 @@ function saveDevice(id){
   const newName =document.getElementById('dname-'+id)?.value.trim();
   const newModel=document.getElementById('dmodel-'+id)?.value.trim();
   const newId   =document.getElementById('did-'+id)?.value.trim();
+  const newCat  =document.getElementById('dcat-'+id)?.value;
   if(newName)d.name=newName;
   if(newModel)d.model=newModel;
+  if(newCat!==undefined)d.category=newCat;
   if(newId&&newId!==id){
     if(devices.find(x=>x.id===newId&&x!==d)){showToast('⚠️ そのIDはすでに使われています');return;}
     d.id=newId;
